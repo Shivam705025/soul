@@ -1,0 +1,50 @@
+name: Flutter CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # Create a placeholder asset for the model to pass the flutter test check
+    - name: Create placeholder asset for model
+      run: |
+        mkdir -p assets/models/
+        touch assets/models/resnet18-v1-7.onnx
+
+    # Setup Flutter
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        flutter-version: 3.29.0
+
+    # Install dependencies
+    - name: Install Dependencies
+      run: flutter pub get
+
+    # Run Dart format
+    - name: Verify Formatting
+      run: dart format --output=none --set-exit-if-changed --line-length 120 $(find . -name "*.dart" -not -path "./lib/l10n/generated/*")
+
+    # Analyze Dart code
+    - name: Analyze
+      run: flutter analyze
+
+    - name: Run Unit Tests
+      run: |
+        if [ "$(ls -A test)" ]; then
+          flutter test
+        else
+          echo "No tests found in the test directory."
+        fi
+
